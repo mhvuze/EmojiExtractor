@@ -19,7 +19,6 @@ namespace EmojiExtractor
             long last_start = 0;
             long last_end = 0;
             uint width = 0;
-            uint height = 0;
             int size = 0;
 
             // Print header
@@ -51,46 +50,52 @@ namespace EmojiExtractor
                 int read = 0;
 
                 // Search for file start
-                while (reader.BaseStream.Position != reader.BaseStream.Length)
+                while (reader.BaseStream.Position < reader.BaseStream.Length - 4)
                 {
                     read = reader.ReadInt32();
+
                     if (read == 0x474E5089)
-                    {                     
+                    {
+                        //Console.WriteLine("Found png file #{0} at 0x{1}.", count.ToString("D5"), (reader.BaseStream.Position + 4).ToString("X8"));
+
                         last_start = reader.BaseStream.Position - 4;
 
                         // Get image dimensions
                         reader.BaseStream.Seek(0x0C, SeekOrigin.Current);
                         width = swapEndianness(reader.ReadUInt32());
-                        height = swapEndianness(reader.ReadUInt32());
+
+                        // Search for file end
+                        while ((read != 0x444E4549) && (reader.BaseStream.Position != reader.BaseStream.Length))
+                        {
+                            read = reader.ReadInt32();
+                            reader.BaseStream.Seek(-3, SeekOrigin.Current);
+                        }
+                        last_end = reader.BaseStream.Position + 4;
 
                         if (width > min_width)
                         {
-                            // Search for file end
-                            while ((read != 0x444E4549) && (reader.BaseStream.Position != reader.BaseStream.Length))
-                            {
-                                read = reader.ReadInt32();
-                            }
-                            last_end = reader.BaseStream.Position + 4;
-
                             // Read and write file buffer
                             size = Convert.ToInt32((last_end) - (last_start));
                             reader.BaseStream.Seek(last_start, SeekOrigin.Begin);
                             byte[] file_array = reader.ReadBytes(size);
-                            File.WriteAllBytes(folder_path + count.ToString("D4") + ".png", file_array);
+                            File.WriteAllBytes(folder_path + count.ToString("D5") + ".png", file_array);
                         }
                         else
                         {
-                            //Console.WriteLine("Skipped file {0} due to dimensions.", count);
+                            //Console.WriteLine("Skipped due to dimensions.");
                             skip_count++;
-                        }
-
+                        }                        
                         count++;
+                    }
+                    else
+                    {
+                        reader.BaseStream.Seek(-3, SeekOrigin.Current);
                     }
                 }
             }
 
             // End
-            Console.WriteLine("Found {0} Emojis and extracted {1} image files.", count - 1, count - 1 - skip_count);
+            Console.WriteLine("Found {0} Emojis and extracted {1} of them.", count - 1, count - 1 - skip_count);
         }
 
         // from http://stackoverflow.com/a/3294698/5343630
