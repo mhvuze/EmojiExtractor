@@ -64,16 +64,16 @@ namespace EmojiExtractor
                         reader.BaseStream.Seek(0x0C, SeekOrigin.Current);
                         width = swapEndianness(reader.ReadUInt32());
 
-                        // Search for file end
-                        while ((read != 0x444E4549) && (reader.BaseStream.Position != reader.BaseStream.Length))
-                        {
-                            read = reader.ReadInt32();
-                            reader.BaseStream.Seek(-3, SeekOrigin.Current);
-                        }
-                        last_end = reader.BaseStream.Position + 4;
-
                         if (width > min_width)
                         {
+                            // Search for file end
+                            while ((read != 0x444E4549) && (reader.BaseStream.Position != reader.BaseStream.Length))
+                            {
+                                read = reader.ReadInt32();
+                                reader.BaseStream.Seek(-3, SeekOrigin.Current);
+                            }
+                            last_end = reader.BaseStream.Position + 4;
+
                             // Read and write file buffer
                             size = Convert.ToInt32((last_end) - (last_start));
                             reader.BaseStream.Seek(last_start, SeekOrigin.Begin);
@@ -95,7 +95,7 @@ namespace EmojiExtractor
             }
 
             // End
-            Console.WriteLine("Found {0} Emojis and extracted {1} of them.", count - 1, count - 1 - skip_count);
+            Console.WriteLine("Found {0} Emojis in total. {1} matched your filter and have been extracted.", count - 1, count - 1 - skip_count);
         }
 
         // from http://stackoverflow.com/a/3294698/5343630
